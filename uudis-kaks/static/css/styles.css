@@ -1,0 +1,41 @@
+.u2-card {
+    /* Add shadows to create the "card" effect */
+    /*height: 400px;*/
+    padding:5px;
+    margin: 15px 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+
+    border-color: initial;
+    transition: 0.3s;
+}
+
+.u2-container {
+    /* Add shadows to create the "card" effect */
+    height: 80%;
+    padding:8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-style: solid none none none;
+    border-width: 1px;
+}
+
+a.u2 {
+  color: black;
+  text-decoration: none;
+  margin-bottom: 0px;
+}
+
+h2.u2 {
+    color: black;
+    line-height: 1.2;
+    margin-bottom: 2px;
+
+}
+
+p.u2 {
+    color: black;
+    margin-bottom: 0px;
+
+}
