@@ -36,12 +36,8 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 		} else {
 			// $content =  $this->getVoog($atts);
 		}
-		if ($atts['news_height'] === 'full')
-		{
-			$u2_height = '416px';
-		} else {
-			$u2_height = '200px';
-		}
+
+		$u2_height = ($atts['news_height'] === 'full') ? '416px' : '200px';
 
 		// $tag = get_tag();
 
@@ -73,6 +69,10 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 	*Saadab saadud lingi läbi Mercury API
 	*Näitab iga lingi taga olnud sisust u. esimesed 350 tähemärki
 	*/
+	require_once(ABSPATH . 'wp-admin/includes/media.php');
+	require_once(ABSPATH . 'wp-admin/includes/file.php');
+	require_once(ABSPATH . 'wp-admin/includes/image.php');
+
 	if (!isset($atts['lk']))
 	{
 		global $m; //Muutuja modaal akende identifitseerimiseks
@@ -102,6 +102,7 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 
 	$uudis[$feed_url]['count'] = count($xml->channel->item);
 
+	// Kontroll kas päring tuli kasutaja nupu (valge, sinine) vajutusest
 		if (!isset($atts['lk']))
 			{
 				if ($uudis[$feed_url]['id'] < $uudis[$feed_url]['count'])
@@ -161,6 +162,7 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 												'include' => $atts['news_category'],
 											) );
 
+
  		// 	var_dump($atts['news_category']);
 
 			// if ($output->date_published == ""){
@@ -186,7 +188,7 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 			*strip_tags() puhastab stringi HTML ja PHP tagidest
 			*/
 			if (strlen(strip_tags($content)) > 0) {
-
+				$result['data'] = $atts;
 				//Lehitseja aknale sisu loomine
 
 				$html = "<a class='u2' href= $output->url>'$output->domain'</a>";
@@ -197,6 +199,9 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 				}	else{
 					$post_id = $post_names[strtolower($title)];
 					$html .= $kategooria[0]->name . " " ."<button name='nupp' type='submit' onclick = kustuta('$post_id') class='btn btn-danger btn-sm'></button>" ;
+
+					// $image = media_sideload_image( $image, $post_id, $output->domain);
+					// var_dump($image);
 				}
 				$html .=  "<button name='eelmine' type='button' onclick=tulevane() class='btn btn-default btn-sm'>" . "" . "</button>";
 				$html .=  "<button name='tulevane' type='button' onclick=tulevane() class='btn btn-primary btn-sm'>" . "" . "</button>";
@@ -220,6 +225,7 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 					} else {
 						$html .= "<img src='$image' class='img-thumbnail' alt='$title' 	style='float:right;width:50%;height:100%;border:0;'>";
 					}
+					$result['data']['lead_image'] = $image;
 				}
 
 				if ($atts['show_preview'] and $atts['news_height'] === 'full')
@@ -275,7 +281,7 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 
 				$html .= "</div>";
 
-				$result['data'] = $atts;
+
 				$result['data']['lk'] = $uudis[$feed_url]['id'];
 				$result['data']['lk_kokku'] = $uudis[$feed_url]['count'];
 				// $result['data']['title'] = $title;
@@ -317,33 +323,114 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 	private function url_exists($url) {
 		//Funktsioon mis kontrollib, kas pildi lingilt tuleb pilt
 	    $hdrs = @get_headers($url);
-
 	    return is_array($hdrs) ? preg_match('/^HTTP\\/\\d+\\.\\d+\\s+2\\d\\d\\s+.*$/',$hdrs[0]) : false;
 	}
 
+
 	function uudis_kaks_create()
+	// Salvestab uue uudise WP-i
 	{
+		require_once(ABSPATH . 'wp-admin/includes/media.php');
+		require_once(ABSPATH . 'wp-admin/includes/file.php');
+		require_once(ABSPATH . 'wp-admin/includes/image.php');
 
 		$query_post = $_POST;
     $post_title = ($query_post['post_title']) ? $query_post['post_title'] : false;
 
+		$content = stripslashes($query_post['post_content']);
     // Create post object
     $new_u2_post = array(
         'post_type'     => 'post',
         'post_title'    => wp_strip_all_tags($post_title ),
 				'post_name' => wp_strip_all_tags($post_title ),
-				'post_content' => $query_post['post_content'],
+				'post_content' => $content,
         'post_status'   => 'publish',
         'post_author'   => 1,
 				'post_category' => array($query_post['post_category']),
     );
 
     // Insert the post into the database
-    $uus_id = wp_insert_post( $new_u2_post );
+    $uus_post_id = wp_insert_post( $new_u2_post );
 
-		// $uus_id = 14;
+		$alt = "lead_image";
 
-		wp_send_json_success( $uus_id );
+		$image = media_sideload_image( $query_post['lead_image'], $uus_post_id, $alt);
+		if(!empty($image) && !is_wp_error($image)){
+			$args = array(
+				'post_type' => 'attachment',
+				'posts_per_page' => 1,
+				'post_status' => 'any',
+				'post_parent' => $uus_post_id
+			);
+
+			// reference new image to set as featured
+			$attachments = get_posts($args);
+
+			if($attachments){
+				foreach($attachments as $attachment){
+					set_post_thumbnail($uus_post_id, $attachment->ID);
+					// only want one image
+					break;
+				}
+			}
+		}
+
+		$dom = new domDocument;
+		/*** load the html into the object ***/
+		libxml_use_internal_errors(true);
+		$dom->loadHTML($content);
+		// libxml_clear_errors();
+		libxml_use_internal_errors(false);
+		/*** discard white space ***/
+		$dom->preserveWhiteSpace = false;
+		$images = $dom->getElementsByTagName('img');
+
+		// $content = "*";
+		$content2 = $content;
+		// var_dump ($content2);
+
+		foreach($images as $img)
+				{
+					$url = $img->getAttribute('src');
+					// var_dump ($url);
+					// $url = stripslashes($url);
+					$url = trim($url, '"');
+
+					$alt = $img->getAttribute('alt');
+					// $alt = stripslashes($alt);
+					$alt = trim($alt, '"');
+
+					// $start = strripos  ($url, "/");
+					// $end = strripos  ($url, ".");
+
+					// $alt = substr ( $url , $start + 1 , ($end - $start) );
+					// var_dump ($url);
+					// var_dump ($alt);
+					// die;
+
+					$image = media_sideload_image($url, $uus_post_id, $alt,  'src');
+					// var_dump (is_wp_error($image));
+					if(!empty($image) && !is_wp_error($image)) {
+						// $content .= "Image not empty and ...";
+						$content2 = str_replace($url, $image, $content2);
+
+					} else {
+						$content .= $image;
+					}
+
+				}
+
+			// var_dump ($content2);
+			// die;
+
+		$new_u2_post['post_content'] = $content2;
+		$new_u2_post['ID'] = $uus_post_id;
+
+		wp_update_post( $new_u2_post );
+
+		// $uus_post_id2 = wp_insert_post( $new_u2_post );
+
+		wp_send_json_success( $uus_post_id );
 
 		// die();
 	}

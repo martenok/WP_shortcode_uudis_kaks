@@ -1,7 +1,8 @@
 
 function korja() {
+  // Salvestab kaardil oleva uudise WP postituseks
+  // Tegelikult saadab sisu tagasi serverisse, kus siis uudis_kaks_create() selle ära salvestab
 
-  // var kaart = this.document.getElementById(id);
   var kaart = jQuery(event.target).parent();
   var andmed = JSON.parse(jQuery(kaart).find(".u2-andmed").attr('data-u2'));
   // var nupp = jQuery(event.target);
@@ -24,7 +25,8 @@ function korja() {
     'post_content'  : sisu,
     'post_status'   : 'publish',
     'post_author'   : 1,
-    'post_category' : kategooria
+    'post_category' : kategooria,
+    'lead_image'    : andmed.lead_image
   };
 
   console.log(kaart);

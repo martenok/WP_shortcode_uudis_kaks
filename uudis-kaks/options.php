@@ -54,7 +54,7 @@ $options = array(
 
 	'view' => array(
 		'label'   => __('View', 'unyson'),
-		'desc'    => __('Choose what view file should the shortcode pick', 'unyson'),
+		'desc'    => __('Choose what view file should the shortcode pick, choose B (this will work)', 'unyson'),
 		'type'    => 'select',
 		'choices' => array(
 			'a'    => __('View A', 'unyson'),
