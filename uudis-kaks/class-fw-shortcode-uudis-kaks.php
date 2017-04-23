@@ -37,9 +37,14 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 			// $content =  $this->getVoog($atts);
 		}
 
+		// var_dump(fw_get_db_extension_data('uudis_kaks', 'mercury_key'));
+
+		// fw_set_db_ext_settings_option('uudis_kaks', $atts['id'], array(
+		// 	'mercury_key' => 'Ahaa',
+		// ));
+
 		$u2_height = ($atts['news_height'] === 'full') ? '416px' : '200px';
 
-		// $tag = get_tag();
 
 		if ($atts['view'] !== 'rand') {
 			$view_path = $this->locate_path('/views/' . $atts['view'] . '.php');
@@ -63,243 +68,286 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 		return '<b>Something went wrong :(</b>';
 	}
 
-	public function get_mercury_voog($atts){
 	/**
-	*Võtab RSS voost lingi artiklile
-	*Saadab saadud lingi läbi Mercury API
-	*Näitab iga lingi taga olnud sisust u. esimesed 350 tähemärki
-	*/
-	require_once(ABSPATH . 'wp-admin/includes/media.php');
-	require_once(ABSPATH . 'wp-admin/includes/file.php');
-	require_once(ABSPATH . 'wp-admin/includes/image.php');
+	 *Võtab RSS voost lingi artiklile
+	 *Saadab saadud lingi läbi Mercury API
+	 *
+	 * @param  [type] $atts [description]
+	 * @return [type]       [description]
+	 */
+	 public function get_mercury_voog($atts){
 
-	if (!isset($atts['lk']))
-	{
-		global $m; //Muutuja modaal akende identifitseerimiseks
-		global $uudis;
-	}
+		 if (!isset($atts['lk']))
+		 {
+			 global $m; //Muutuja modaal akende identifitseerimiseks
+			 global $uudis;
+		 }
 
-	$id =  $atts['id'];
-	$m_id = "modal_" . $id;
+		 $id =  $atts['id'];
+		 $m_id = "modal_" . $id;
 
-	//Leiab kõik postituste nimed
-	$posts = get_posts (
-		array(
-	  'numberposts' => -1,
-	));
+		 //Leiab kõik postituste nimed
+		 $posts = get_posts (
+			 array(
+				 'numberposts' => -1,
+			 ));
 
-	foreach ($posts as $obj ) {
-		$post_names[strtolower ($obj->{'post_title'})] = $obj->{'ID'};
-	}
-	//Lõpp Leiab kõik postituste nimed
+			 foreach ($posts as $obj ) {
+				 $post_names[strtolower ($obj->{'post_title'})] = $obj->{'ID'};
+			 }
+			 //Lõpp Leiab kõik postituste nimed
 
-	$feed_url = $atts['link'];
+			 $feed_url = $atts['link'];
 
-	if (!isset($feed_url)) {
-		return $this->get_error_msg();
-	}
-	$xml = simplexml_load_file($feed_url);
+			 if (!isset($feed_url)) {
+				 return $this->get_error_msg();
+			 }
 
-	$uudis[$feed_url]['count'] = count($xml->channel->item);
+			 libxml_use_internal_errors(true);
+			 $xml = simplexml_load_file($feed_url);
 
-	// Kontroll kas päring tuli kasutaja nupu (valge, sinine) vajutusest
-		if (!isset($atts['lk']))
-			{
-				if ($uudis[$feed_url]['id'] < $uudis[$feed_url]['count'])
-				{
-					$uudis[$feed_url]['id']++;
-				} else
-				{
-					$uudis[$feed_url]['id'] = $uudis[$feed_url]['count'];
-				}
-		} else {
-			$uudis[$feed_url]['id'] = $atts['lk'];
-		}
+			//  if ($xml === false) {
+			//      echo "Failed loading XML\n";
+			//      foreach(libxml_get_errors() as $error) {
+			//          echo "\t", $error->message;
+			//      }
+			//  }
+
+			 $uudis[$feed_url]['count'] = count($xml->channel->item);
+
+			 // Kontroll kas päring tuli kasutaja nupu (valge, sinine) vajutusest
+			 if (!isset($atts['lk']))
+			 {
+				 if ($uudis[$feed_url]['id'] < $uudis[$feed_url]['count'])
+				 {
+					 $uudis[$feed_url]['id']++;
+				 } else
+				 {
+					 $uudis[$feed_url]['id'] = $uudis[$feed_url]['count'];
+				 }
+			 } else {
+				 $uudis[$feed_url]['id'] = $atts['lk'];
+			 }
 
 
-		$api_key = $atts['mercury_key'];
+			 $api_key = $atts['mercury_key'];
 
-		// foreach($xml->channel->item as $entry) {
-		//Käib läbi kõik RSS voost saadud uudised
+			 $entry = $xml->channel->item[($uudis[$feed_url]['id'] - 1 )];
 
-		$entry = $xml->channel->item[($uudis[$feed_url]['id'] - 1 )];
+			 $link = $entry->link; //Võtab artiklile viitava lingi
 
-			$link = $entry->link; //Võtab artiklile viitava lingi
+			 // $html = "";
 
-			// $html = "";
-
-			//Võlukood, mis saadud GitHUBist ja mis saadab lingi läbi mercury API kasutades cURL-i
-			/**
+			 //Võlukood, mis saadud GitHUBist ja mis saadab lingi läbi mercury API kasutades cURL-i
+			 /**
 			 * Created by PhpStorm.
 			 * User: Rees Clissold
 			 * Date: 13/11/2016
 			 * Time: 20:46
 			 */
-			// Proof of concept
-			// TODO: Rewrite this in JavaScript using an AJAX HTTP Request
+			 // Proof of concept
+			 // TODO: Rewrite this in JavaScript using an AJAX HTTP Request
 
-			$ch = curl_init();
-			// $api_key = file_get_contents('api.key');
-			$request_headers = array();
-			$request_headers[] = 'x-api-key: ' . $api_key;
+			 $ch = curl_init();
+			 // $api_key = file_get_contents('api.key');
+			 $request_headers = array();
+			 $request_headers[] = 'x-api-key: ' . $api_key;
 
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-			curl_setopt($ch, CURLOPT_URL, 'https://mercury.postlight.com/parser?url=' . $link);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $request_headers);
+			 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			 curl_setopt($ch, CURLOPT_URL, 'https://mercury.postlight.com/parser?url=' . $link);
+			 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			 curl_setopt($ch, CURLOPT_HTTPHEADER, $request_headers);
 
-			$output = json_decode(curl_exec($ch));
-			curl_close($ch);
-			//Võlukoodi lõpp
-
-
-			$title = $output->title;
-			$content = $output->content;
-
-			$kategooria = get_terms( array(
-												'taxonomy' => 'category',
-												'hide_empty' => false,
-												'include' => $atts['news_category'],
-											) );
+			 $output = json_decode(curl_exec($ch));
+			 curl_close($ch);
+			 //Võlukoodi lõpp
 
 
- 		// 	var_dump($atts['news_category']);
+			 $title = $output->title;
+			 $content = $output->content;
 
-			// if ($output->date_published == ""){
-			// 	if ($entry->pubDate == ""){
-			// 		$kuup = "Väga vana";
-			// 	}else $kuup = date('Y-m-d h:i', strtotime($entry->pubDate));
-			// }else {
-			// 	$kuup = date('Y-m-d h:i', strtotime($output->date_published));
-			// }
-
-			if ($output->date_published == ""){
-				if ($entry->pubDate == ""){
-					$kuup = "Väga vana";
-				}else $kuup = $entry->pubDate;
-			}else {
-				$kuup = $output->date_published;
-			}
-
-			$image = $output->lead_image_url;
-
-			/**
-			*Kontroll, kas artiklil on mingi sisu
-			*strip_tags() puhastab stringi HTML ja PHP tagidest
-			*/
-			if (strlen(strip_tags($content)) > 0) {
-				$result['data'] = $atts;
-				//Lehitseja aknale sisu loomine
-
-				$html = "<a class='u2' href= $output->url>'$output->domain'</a>";
-
-				$html .= $uudis[$feed_url]['id'] . "/" . $uudis[$feed_url]['count'];
-				if (!array_key_exists (strtolower($title) , $post_names )){
-					$html .= $kategooria[0]->name . " " ."<button name='nupp' type='submit' onclick = korja() class='btn btn-success btn-sm'></button>" ;
-				}	else{
-					$post_id = $post_names[strtolower($title)];
-					$html .= $kategooria[0]->name . " " ."<button name='nupp' type='submit' onclick = kustuta('$post_id') class='btn btn-danger btn-sm'></button>" ;
-
-					// $image = media_sideload_image( $image, $post_id, $output->domain);
-					// var_dump($image);
-				}
-				$html .=  "<button name='eelmine' type='button' onclick=tulevane() class='btn btn-default btn-sm'>" . "" . "</button>";
-				$html .=  "<button name='tulevane' type='button' onclick=tulevane() class='btn btn-primary btn-sm'>" . "" . "</button>";
-				// $html .= "<div class='col-sm-4'> ";
-				$html .= "<div class='u2-container'>";
-
-				// $m++; //Modaalakna unikaalne id
-
-				//link modaalaknale
-				$html .= "<a class='u2' href= '#' data-target=\"#$m_id\" data-toggle=\"modal\"> <h2 class='u2'>$title</h2>";
-
-				$html .=  "$kuup" ;
-
-				// var_dump($atts['news_height']);
-
-				//Pilt lehitsejale ainult siis, kui pildi link terve
-				if ( $this->url_exists($image)){
-					if ($atts['news_height'] === 'full')
-					{
-						$html .= "<img src='$image' class='img-thumbnail' alt='$title' 	style='float:right;width:50%;border:0;'>";
-					} else {
-						$html .= "<img src='$image' class='img-thumbnail' alt='$title' 	style='float:right;width:50%;height:100%;border:0;'>";
-					}
-					$result['data']['lead_image'] = $image;
-				}
-
-				if ($atts['show_preview'] and $atts['news_height'] === 'full')
-				{
-					//Lühendatud eelvaate sisu tegemine
-					$n = 550; //eelvaate sisu pikkus tähtedes
-
-					$eelVaade = strtok(strip_tags($content), "."); //strtok() annab stringi kuni eraldajani
-					for ($x = 0; $x <= 2; $x++) { //Võtan 3 lauset, eeldusel, et lause lõppeb punktiga
-						$eelVaade .= strtok(".") . ".";
-					}
-
-					if (strlen($eelVaade) > $n) { //Kui sisu pikem kui vaja, siis tee viimase tühiku pealt lühemaks
-						$description = substr($eelVaade, 0, strripos(substr($eelVaade, 0, $n), " ")) . "...";
-					}else {
-						$description = $eelVaade;
-					}
-
-					$html .= $description;
-				}
-
-				$html .= "</a>";
-
-				// $html .= $output->date_published .'<br>';
-				// $html .= $output->lead_image_url .'<br>';
-				// $html .= $output->dek .'<br>';
-				// $html .= $output->url .'<br>';
-				// $html .= $output->domain .'<br>';
-				// $html .= $output->excerpt .'<br>';
-				// $html .= $output->word_count .'<br>';
-				// $html .= $output->direction .'<br>';
-				// $html .= $output->total_pages .'<br>';
-				// $html .= $output->rendered_pages .'<br>';
-				// $html .= $output->next_page_url .'<br>';
-
-				//modaalakna sisu
-
-				$html .= "
-					<div id='$m_id' class='modal fade'>
-						<div class='modal-dialog'>
-							<div class='modal-content'>
-								<div class='modal-header'>
-									<button type='button' class='close' data-dismiss='modal' >&times;</button>
-									<h2>'$title'</h2>
-								</div>
-								<div class='modal-body'>
-								   $content
-								</div>
-
-							</div>
-						</div>
-					</div>";
-
-				$html .= "</div>";
+			 $kategooria = get_terms( array(
+				 'taxonomy' => 'category',
+				 'hide_empty' => false,
+				 'include' => $atts['news_category'],
+			 ) );
 
 
-				$result['data']['lk'] = $uudis[$feed_url]['id'];
-				$result['data']['lk_kokku'] = $uudis[$feed_url]['count'];
-				// $result['data']['title'] = $title;
-				// $result['data']['kuup'] = $kuup;
-				$jura = array("http", ":", ".", "/", "_", "?", "=", "<", ">");
-				$result['data']['voo_nimi'] = str_replace($jura, "",strip_tags($feed_url));
+			 // 	var_dump($atts['news_category']);
 
-				$html .= "<div class='u2-andmed' data-u2=" . json_encode($result['data']) . "> </div>";
+			 // if ($output->date_published == ""){
+			 // 	if ($entry->pubDate == ""){
+			 // 		$kuup = "Väga vana";
+			 // 	}else $kuup = date('Y-m-d h:i', strtotime($entry->pubDate));
+			 // }else {
+			 // 	$kuup = date('Y-m-d h:i', strtotime($output->date_published));
+			 // }
 
-				$result['content'] = $html;
+			 if ($output->date_published == ""){
+				 if ($entry->pubDate == ""){
+					 $kuup = "Väga vana";
+				 }else $kuup = $entry->pubDate;
+			 }else {
+				 $kuup = $output->date_published;
+			 }
 
-				return $result; //saadab browserile sisu
+			 $image = $output->lead_image_url;
 
-			}
+			 /**
+			 *Kontroll, kas artiklil on mingi sisu
+			 *strip_tags() puhastab stringi HTML ja PHP tagidest
+			 */
+			 if (strlen(strip_tags($content)) > 0) {
+				 $result['data'] = $atts;
+				 //Lehitseja aknale sisu loomine
+				 $html = "<div id='loader_$id' class='loader u2'></div>";
+				 $html .= "<a class='u2' href= $output->url>'$output->domain'</a>";
 
-		// }
+				//  $html .= $uudis[$feed_url]['id'] . "/" . $uudis[$feed_url]['count'];
 
-	}
+				 $html .=  "  " . $kategooria[0]->name;
+
+				 /**
+				  * Make navigation buttons
+				  * if arcticle exists in WP database make red button to delte article
+				  * otherwise  make green button to save  asrticle in WP
+				  *
+				  */
+
+				 $html .= "<div id='btns_$id' class='u2-buttons'>";
+					 if (!array_key_exists (strtolower($title) , $post_names )){
+						 $html .= "<button name='nupp' type='button' onclick = korja() class='btn btn-success btn-sm' aria-label='Save'>"
+						//  . "<span class='glyphicon glyphicon-save' aria-hidden='true'></span>"
+						 . "+"
+						 . "</button>" ;
+					 }	else{
+						 $post_id = $post_names[strtolower($title)];
+						 $html .= "<button name='nupp' type='submit' onclick = kustuta('$post_id') class='btn btn-danger btn-sm'>" . "-" . "</button>" ;
+					 }
+					 $html .=  "<button name='eelmine' type='button' onclick=tulevane() class='btn btn-default btn-sm'>"
+					 	. "<"
+						. "</button>";
+					 $html .=  "<button name='tulevane' type='button' onclick=tulevane() class='btn btn-primary btn-sm'>"
+					 	. ">"
+						. "</button>";
+				 $html .= "</div>";
+
+				 $gradient_step_1 = 4;
+				 $gradient_step_2 = 1;
+
+				 $pos_u2 = $uudis[$feed_url]['id'] * 100 / $uudis[$feed_url]['count'] ;
+				 $pos_u2_white_a = (($pos_u2 - $gradient_step_1) > 0) ? $pos_u2 - $gradient_step_1 : 0;
+				 $pos_u2_gray_a = (($pos_u2_white_a - $gradient_step_2) > 0) ? $pos_u2_white_a - $gradient_step_2 : 0;
+				 $pos_u2_white_b = (($pos_u2 + $gradient_step_1) < 100) ? $pos_u2 + $gradient_step_1 : 100;
+				 $pos_u2_gray_b = (($pos_u2_white_b + $gradient_step_2) < 100) ? $pos_u2_white_b + $gradient_step_2 : 100;
+
+				 $html .= "<div id='position_$id' style='background-image:
+				     linear-gradient(
+				       to right,
+				       #cccccc,
+				       #cccccc $pos_u2_gray_a%,
+				       white $pos_u2_white_a%,
+				       #05638c $pos_u2%,
+				       white $pos_u2_white_b%,
+				       #cccccc $pos_u2_gray_b%,
+				       #cccccc
+				     );' class='u2-position'></div>";
+
+
+				 $html .= "<div class='u2-container'>";
+
+				 // $m++; //Modaalakna unikaalne id
+
+				 //link modaalaknale
+				 $html .= "<a class='u2' href= '#' data-target=\"#$m_id\" data-toggle=\"modal\"> <h2 class='u2'>$title</h2>";
+
+				 $html .=  "$kuup" ;
+
+				 // var_dump($atts['news_height']);
+
+				 //Pilt lehitsejale ainult siis, kui pildi link terve
+				 if ( $this->url_exists($image)){
+					 if ($atts['news_height'] === 'full')
+					 {
+						 $html .= "<img src='$image' class='img-thumbnail' alt='$title' 	style='float:right;width:50%;border:0;'>";
+					 } else {
+						 $html .= "<img src='$image' class='img-thumbnail' alt='$title' 	style='float:right;width:50%;height:100%;border:0;'>";
+					 }
+					 $result['data']['lead_image'] = $image;
+				 }
+
+				 if ($atts['show_preview'] and $atts['news_height'] === 'full')
+				 {
+					 //Lühendatud eelvaate sisu tegemine
+					 $n = 550; //eelvaate sisu pikkus tähtedes
+
+					 $eelVaade = strtok(strip_tags($content), "."); //strtok() annab stringi kuni eraldajani
+					 for ($x = 0; $x <= 2; $x++) { //Võtan 3 lauset, eeldusel, et lause lõppeb punktiga
+						 $eelVaade .= strtok(".") . ".";
+					 }
+
+					 if (strlen($eelVaade) > $n) { //Kui sisu pikem kui vaja, siis tee viimase tühiku pealt lühemaks
+						 $description = substr($eelVaade, 0, strripos(substr($eelVaade, 0, $n), " ")) . "...";
+					 }else {
+						 $description = $eelVaade;
+					 }
+
+					 $html .= $description;
+				 }
+
+				 $html .= "</a>";
+
+				 // $html .= $output->date_published .'<br>';
+				 // $html .= $output->lead_image_url .'<br>';
+				 // $html .= $output->dek .'<br>';
+				 // $html .= $output->url .'<br>';
+				 // $html .= $output->domain .'<br>';
+				 // $html .= $output->excerpt .'<br>';
+				 // $html .= $output->word_count .'<br>';
+				 // $html .= $output->direction .'<br>';
+				 // $html .= $output->total_pages .'<br>';
+				 // $html .= $output->rendered_pages .'<br>';
+				 // $html .= $output->next_page_url .'<br>';
+
+				 //modaalakna sisu
+
+				 $html .= "
+				 <div id='$m_id' class='modal fade'>
+				 <div class='modal-dialog'>
+				 <div class='modal-content'>
+				 <div class='modal-header'>
+				 <button type='button' class='close' data-dismiss='modal' >&times;</button>
+				 <h2>'$title'</h2>
+				 </div>
+				 <div class='modal-body'>
+				 $content
+				 </div>
+
+				 </div>
+				 </div>
+				 </div>";
+
+				 $html .= "</div>";
+
+
+				 $result['data']['lk'] = $uudis[$feed_url]['id'];
+				 $result['data']['lk_kokku'] = $uudis[$feed_url]['count'];
+				 // $result['data']['title'] = $title;
+				 // $result['data']['kuup'] = $kuup;
+				 $jura = array("http", ":", ".", "/", "_", "?", "=", "<", ">", "@", "$", "#", "!", "-");
+				 $result['data']['voo_nimi'] = str_replace($jura, "",strip_tags($feed_url));
+
+				 $html .= "<div class='u2-andmed' data-u2=" . json_encode($result['data']) . "> </div>";
+
+				 $result['content'] = $html;
+
+				 return $result; //saadab browserile sisu
+
+			 }
+
+			 // }
+
+		 }
 
 	public function _get_category_dropdown_choices()	{
 	// Funktsioon annab kategooriate valiku nimekirja
@@ -326,9 +374,10 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 	    return is_array($hdrs) ? preg_match('/^HTTP\\/\\d+\\.\\d+\\s+2\\d\\d\\s+.*$/',$hdrs[0]) : false;
 	}
 
-
+	/*
+	Salvestab uue uudise WP-i
+	 */
 	function uudis_kaks_create()
-	// Salvestab uue uudise WP-i
 	{
 		require_once(ABSPATH . 'wp-admin/includes/media.php');
 		require_once(ABSPATH . 'wp-admin/includes/file.php');
@@ -448,7 +497,13 @@ class FW_Shortcode_Uudis_Kaks extends FW_Shortcode
 	function uudis_kaks_mercy()
 	{
 		$atts = $_POST;
-		unset($atts[action]);
+		unset($atts['action']);
+
+		// var_dump(fw_get_db_ext_settings_option('uudis_kaks', $atts['id'], 'mercury_key'));
+		// die;
+
+		// var_dump(crypt($atts['mercury_key'], '$5$rounds=5000$usesomesillystringforsalt$'));
+		// die;
 
 		$korras = $this->get_mercury_voog($atts);
 

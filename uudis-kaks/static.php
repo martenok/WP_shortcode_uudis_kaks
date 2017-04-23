@@ -13,6 +13,11 @@ wp_enqueue_script(
     $uri . '/static/js/scripts.js'
 );
 
+wp_enqueue_script(
+    'angularjs',
+    'https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js'
+);
+
 wp_localize_script( 'fw-shortcode-uudis-kaks', 'uudis_kaks_params', array( 'uudis_kaks_ajax_url' => admin_url( 'admin-ajax.php' ) ) );
 
 // if (!function_exists('_action_theme_shortcode_uudis_kaks_enqueue_dynamic_css')):

@@ -1,21 +1,31 @@
+jQuery(document).ready(function(){
 
+  jQuery(".u2-buttons").css("display", "block");
+  jQuery(".loader").css("display", "none");
+  console.log(jQuery(".loader"));
+  console.log(jQuery(".u2-buttons"));
+});
+
+
+/*
+Salvestab kaardil oleva uudise WP postituseks
+Tegelikult saadab sisu tagasi serverisse, kus siis uudis_kaks_create() selle ära salvestab
+ */
 function korja() {
-  // Salvestab kaardil oleva uudise WP postituseks
-  // Tegelikult saadab sisu tagasi serverisse, kus siis uudis_kaks_create() selle ära salvestab
 
-  var kaart = jQuery(event.target).parent();
-  var andmed = JSON.parse(jQuery(kaart).find(".u2-andmed").attr('data-u2'));
   // var nupp = jQuery(event.target);
+  var kaart = jQuery(event.target).parentsUntil(jQuery(".u2-card")).parent();
+  var andmed = JSON.parse(jQuery(kaart).find(".u2-andmed").attr('data-u2'));
 
+  jQuery("#btns_" + andmed.id).css("display", "none");
+  jQuery("loader_" + andmed.id).css("display", "initial");
   // var id = jQuery(kaart).attr('id');
   // var kuup = jQuery(kaart).find( "kuup_" + id).innerText;
 
   var voog = andmed.link;
-  // var nupp_id = "";
   var kategooria = andmed.news_category;
 
   console.log(andmed);
-
 
   var sisu = jQuery(kaart).find(".modal-body").eq(0).html();
   var pealkiri = jQuery(kaart).find("h2").eq(0).text();
@@ -30,42 +40,48 @@ function korja() {
   };
 
   console.log(kaart);
-  // console.log(kuup);
-  // console.log(wurl);
   console.log(voog);
   console.log(kategooria);
   console.log(sisu);
   console.log(pealkiri);
 
-  // var ajaxurl = uudis_kaks_params.uudis_kaks_ajax_url;
   jQuery.ajax({
     url: uudis_kaks_params.uudis_kaks_ajax_url,
     type: "POST",
     data: params,
-    dataType: 'json',
-    // success: function(response) {
-    //         console.log(response);
-    //     }
-  }).done(function(json) {
-					if(!json.success) {
-						console.log(json);
-					}
-					if(json.data) {
-            // console.log(jQuery(kaart).find(".btn btn-success btn-sm"));
-            // jQuery(kaart).find(".btn btn-success btn-sm").switchClass( ".btn btn-success btn-sm", "btn btn-danger btn-sm", 1000, "easeInOutQuad" ).attr("onclick","kustuta()");
-            jQuery(kaart).find("button[name='nupp']").attr("onclick","kustuta("+ json.data + ")").removeClass( "btn btn-success btn-sm" ).addClass( "btn btn-danger btn-sm" );
-            // jQuery(kaart).find(":button").replaceWith( "<button type='submit' onclick=kustuta() class='btn btn-danger btn-sm'></button>" );
-						// events = prepareEventSources(json.data);
-            console.log(json.data);
-					}
-				});
+    dataType: 'json'
+  })
+  .done(function(json) {
+			if(json.data) {
+
+        jQuery(kaart).find("button[name='nupp']")
+          .attr("onclick","kustuta("+ json.data + ")")
+          .removeClass( "btn btn-success btn-sm" )
+          .addClass( "btn btn-danger btn-sm" )
+          .html('-');
+
+        console.log(json.data);
+
+			}
+		})
+    .fail(function(json){
+        alert( "error" );
+    })
+    .always(function() {
+      // alert( "complete" );
+      jQuery("#btns_" + andmed.id).css("display", "block");
+      jQuery("loader_" + andmed.id).css("display", "none");
+    });
 
 }
 
 function kustuta(post_id){
-  var kaart = jQuery(event.target).parent();
-  var id = jQuery(kaart).attr('id');
+  var kaart = jQuery(event.target).parentsUntil(jQuery(".u2-card")).parent();
+  // var id = jQuery(kaart).attr('id');
+  var andmed = JSON.parse(jQuery(kaart).find(".u2-andmed").attr('data-u2'));
 
+  jQuery("#btns_" + andmed.id).css("display", "none");
+  jQuery("loader_" + andmed.id).css("display", "initial");
   console.log(kaart);
 
   var params =  {
@@ -84,20 +100,35 @@ function kustuta(post_id){
 						console.log(json);
 					}
 					if(json.data) {
-            jQuery(kaart).find("button[name='nupp']").attr("onclick","korja(" + id + ")").removeClass( "btn btn-danger btn-sm" ).addClass( "btn btn-success btn-sm" );
+            jQuery(kaart).find("button[name='nupp']")
+            .attr("onclick","korja(" + andmed.id + ")")
+            .removeClass( "btn btn-danger btn-sm" )
+            .addClass( "btn btn-success btn-sm" )
+            .html('+');
 					}
-				});
+				})
+    .fail(function(json){
+        alert( "error" );
+    })
+    .always(function() {
+      alert( "complete" );
+      jQuery("#btns_" + andmed.id).css("display", "block");
+      jQuery("loader_" + andmed.id).css("display", "none");
+    });
   // console.log("Ahaa");
 }
 
 function tulevane()
 {
-  // var kaart = jQuery(event.target).parentsUntil(jQuery(".u2-card")).parent();
-  var kaart = jQuery(event.target).parent();
+  var kaart = jQuery(event.target).parentsUntil(jQuery(".u2-card")).parent();
+  // var kaart = jQuery(event.target).parent();
   var andmed = JSON.parse(jQuery(kaart).find(".u2-andmed").attr('data-u2'));
   var voo_nimi = andmed.voo_nimi;
 
   var kaardid = jQuery("div[name=" + voo_nimi + "]") ;
+
+  jQuery(kaardid).find(".u2-buttons").css("display", "none");
+  jQuery(kaardid).find(".loader").css("display", "initial");
 
   if (jQuery(event.target).attr('name') === 'tulevane') {
     var mis_filter = ':last';
@@ -132,12 +163,17 @@ function tulevane()
 
   console.log(kaardid);
   console.log("Samm: ", samm);
+  var first_lk = parseInt(JSON.parse(jQuery( kaardid ).eq(0).find(".u2-andmed").attr('data-u2')).lk);
+  console.log("Esimene lk: ", first_lk);
+  var i = 0;
 
 jQuery(kaardid).each(function(){
   //  kaart = jQuery(this);
    andmed = JSON.parse(jQuery(this).find(".u2-andmed").attr('data-u2'));
-   andmed.lk = parseInt(andmed.lk) + samm;
+   andmed.lk = first_lk + i + samm;
+   i ++;
 
+   console.log("i:", i);
    console.log("ID:", andmed.id);
    console.log("lk:", andmed.lk);
 
@@ -164,7 +200,16 @@ jQuery(kaardid).each(function(){
             jQuery("#" + json.data.data.id).html(json.data.content);
             // console.log(json.data.content);
 					}
-				});
+				})
+      .fail(function(json){
+          alert( "error" );
+      })
+      .always(function(json) {
+        // alert( "complete" );
+        jQuery("#btns_" + json.data.data.id).css("display", "block");
+        jQuery("#loader_" + json.data.data.id).css("display", "none");
+        console.log(jQuery("#loader_" + json.data.data.id));
+      });
   })
 
   // var id = jQuery(kaart).attr('id');
@@ -173,9 +218,4 @@ jQuery(kaardid).each(function(){
   // var kloon = jQuery(  kaardid ).filter(":last").clone(true);
 
   // jQuery( kaardid ).filter(":first").replaceWith(kloon);
-}
-
-function eelmine(){
-
-
 }
